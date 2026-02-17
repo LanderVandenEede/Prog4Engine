@@ -24,12 +24,16 @@ void Scene::RemoveAll()
 	m_objects.clear();
 }
 
-void Scene::Update()
+void Scene::Update(const float deltaTime)
 {
-	for(auto& object : m_objects)
+	float elapsedSec = deltaTime;
+	elapsedSec = NULL; //TODO FIX WARN TREATED AS ERROR
+
+	for (auto& object : m_objects)
 	{
 		object->Update();
 	}
+	
 }
 
 void Scene::Render() const
