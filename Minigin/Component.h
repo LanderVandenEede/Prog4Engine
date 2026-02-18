@@ -7,10 +7,10 @@ namespace dae
 	class Component
 	{
 	public:
-		explicit Component(GameObject* owner) : m_owner(owner) {}
+		explicit Component(GameObject* owner);
 		virtual ~Component() = default;
 
-		virtual void Update() {}
+		virtual void Update(float) {}
 		virtual void Render() const {}
 
 		Component(const Component& other) = delete;

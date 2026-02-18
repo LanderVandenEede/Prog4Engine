@@ -26,12 +26,11 @@ void Scene::RemoveAll()
 
 void Scene::Update(const float deltaTime)
 {
-	float elapsedSec = deltaTime;
-	elapsedSec = NULL; //TODO FIX WARN TREATED AS ERROR
+
 
 	for (auto& object : m_objects)
 	{
-		object->Update();
+		object->Update(deltaTime);
 	}
 	
 }
