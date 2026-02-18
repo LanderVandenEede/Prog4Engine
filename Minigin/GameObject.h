@@ -20,8 +20,6 @@ namespace dae
 		void SetPosition(float x, float y);
 		const Transform& GetTransform() const { return m_transform; }
 
-#pragma region Components
-
 		template<typename T, typename... Args>
 		T* AddComponent(Args&&... args)
 		{
@@ -59,8 +57,6 @@ namespace dae
 			m_components.erase(it);
 			return true;
 		}
-
-#pragma endregion Components
 
 		GameObject() = default;
 		~GameObject();

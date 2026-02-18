@@ -397,11 +397,14 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 
-!3rdParty/**/*
-
 #cmake output
 build
 build_web
 
 # Dear Imgui settings file
 imgui.ini
+
+# ignore steam sdk, should only exist on local device and not be submitted on github
+steamworks_sdk_*/
+
+.DS_Store

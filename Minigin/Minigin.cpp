@@ -1,10 +1,15 @@
 #include <stdexcept>
+#include <sstream>
+#include <iostream>
+#include <chrono>
+
+#if WIN32
 #define WIN32_LEAN_AND_MEAN 
 #include <windows.h>
-#include <chrono>
-#include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_ttf.h>
+#endif
+
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include "Minigin.h"
 #include "InputManager.h"
 #include "SceneManager.h"
@@ -13,49 +18,50 @@
 
 SDL_Window* g_window{};
 
-void PrintSDLVersion()
+void LogSDLVersion(const std::string& message, int major, int minor, int patch)
 {
-	SDL_version version{};
-	SDL_VERSION(&version);
-	printf("We compiled against SDL version %u.%u.%u ...\n",
-		version.major, version.minor, version.patch);
-
-	SDL_GetVersion(&version);
-	printf("We are linking against SDL version %u.%u.%u.\n",
-		version.major, version.minor, version.patch);
-
-	SDL_IMAGE_VERSION(&version);
-	printf("We compiled against SDL_image version %u.%u.%u ...\n",
-		version.major, version.minor, version.patch);
-
-	version = *IMG_Linked_Version();
-	printf("We are linking against SDL_image version %u.%u.%u.\n",
-		version.major, version.minor, version.patch);
-
-	SDL_TTF_VERSION(&version)
-		printf("We compiled against SDL_ttf version %u.%u.%u ...\n",
-			version.major, version.minor, version.patch);
-
-	version = *TTF_Linked_Version();
-	printf("We are linking against SDL_ttf version %u.%u.%u.\n",
-		version.major, version.minor, version.patch);
+#if WIN32
+	std::stringstream ss;
+	ss << message << major << "." << minor << "." << patch << "\n";
+	OutputDebugString(ss.str().c_str());
+#else
+	std::cout << message << major << "." << minor << "." << patch << "\n";
+#endif
 }
 
-dae::Minigin::Minigin(const std::string& dataPath)
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+
+void LoopCallback(void* arg)
+{
+	static_cast<dae::Minigin*>(arg)->RunOneFrame();
+}
+#endif
+
+void PrintSDLVersion()
+{
+	LogSDLVersion("Compiled with SDL", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION);
+	int version = SDL_GetVersion();
+	LogSDLVersion("Linked with SDL ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
+	LogSDLVersion("Compiled with SDL_ttf ", SDL_TTF_MAJOR_VERSION, SDL_TTF_MINOR_VERSION, SDL_TTF_MICRO_VERSION);
+	version = TTF_Version();
+	LogSDLVersion("Linked with SDL_ttf ", SDL_VERSIONNUM_MAJOR(version), SDL_VERSIONNUM_MINOR(version), SDL_VERSIONNUM_MICRO(version));
+}
+
+dae::Minigin::Minigin(const std::filesystem::path& dataPath)
 {
 	PrintSDLVersion();
 
-	if (SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
 	{
+		SDL_Log("Renderer error: %s", SDL_GetError());
 		throw std::runtime_error(std::string("SDL_Init Error: ") + SDL_GetError());
 	}
 
 	g_window = SDL_CreateWindow(
 		"Programming 4 assignment",
-		SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED,
-		640,
-		480,
+		1024,
+		576,
 		SDL_WINDOW_OPENGL
 	);
 	if (g_window == nullptr)
@@ -64,7 +70,6 @@ dae::Minigin::Minigin(const std::string& dataPath)
 	}
 
 	Renderer::GetInstance().Init(g_window);
-
 	ResourceManager::GetInstance().Init(dataPath);
 }
 
@@ -79,24 +84,22 @@ dae::Minigin::~Minigin()
 void dae::Minigin::Run(const std::function<void()>& load)
 {
 	load();
+	m_lastTime = std::chrono::high_resolution_clock::now();
+#ifndef __EMSCRIPTEN__
+	while (!m_quit)
+		RunOneFrame();
+#else
+	emscripten_set_main_loop_arg(&LoopCallback, this, 0, true);
+#endif
+}
 
-	auto& renderer = Renderer::GetInstance();
-	auto& sceneManager = SceneManager::GetInstance();
-	auto& input = InputManager::GetInstance();
+void dae::Minigin::RunOneFrame()
+{
+	const auto now = std::chrono::high_resolution_clock::now();
+	const float deltaTime = std::chrono::duration<float>(now - m_lastTime).count();
+	m_lastTime = now;
 
-	// todo: this update loop could use some work.
-	bool doContinue = true;
-	auto lastTime = std::chrono::high_resolution_clock::now();
-	while (doContinue)
-	{
-		const auto currentTime = std::chrono::high_resolution_clock::now();
-		const float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
-		lastTime = currentTime;
-
-		doContinue = input.ProcessInput();
-		sceneManager.Update(deltaTime);
-		renderer.Render();
-	}
-
-
+	m_quit = !InputManager::GetInstance().ProcessInput();
+	SceneManager::GetInstance().Update(deltaTime);
+	Renderer::GetInstance().Render();
 }
