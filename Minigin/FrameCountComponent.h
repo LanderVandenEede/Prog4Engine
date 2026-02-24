@@ -1,14 +1,14 @@
 #pragma once
-#include "TextComponent.h"
+#include "Component.h"
 
 namespace dae
 {
-	class Font;
+	class TextComponent;
 
-	class FrameCountComponent final : public TextComponent
+	class FrameCountComponent final : public Component
 	{
 	public:
-		FrameCountComponent(GameObject* owner, std::shared_ptr<Font> font);
+		explicit FrameCountComponent(GameObject* owner);
 		~FrameCountComponent() override = default;
 
 		FrameCountComponent(const FrameCountComponent& other) = delete;
@@ -21,5 +21,6 @@ namespace dae
 	private:
 		float m_accumulatedTime{ 0.f };
 		int m_frameCount{ 0 };
+		TextComponent* m_textComponent{ nullptr };
 	};
 }

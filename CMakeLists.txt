@@ -7,10 +7,10 @@ endif()
 
 if(EMSCRIPTEN)
   set(TARGET_NAME minigin_web)
-  set(TARGET_PARAM )
+  set(TARGET_PARAM  "Minigin/OrbitComponent.cpp" "Minigin/OrbitComponent.h" "Minigin/TextureComponent.cpp" "Minigin/TextureComponent.h")
 else()
   set(TARGET_NAME minigin)
-  set(TARGET_PARAM WIN32)
+  set(TARGET_PARAM WIN32 "Minigin/OrbitComponent.cpp" "Minigin/OrbitComponent.h" "Minigin/TextureComponent.cpp" "Minigin/TextureComponent.h")
 endif()
 
 # list source files here
@@ -30,7 +30,7 @@ add_executable(${TARGET_NAME} ${TARGET_PARAM}
   Minigin/TextObject.cpp
   Minigin/Texture2D.cpp
   Minigin/Transform.cpp
-)
+ "Minigin/OrbitComponent.cpp" "Minigin/OrbitComponent.h" "Minigin/TextureComponent.cpp" "Minigin/TextureComponent.h")
 
 # enable c++20 features
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
