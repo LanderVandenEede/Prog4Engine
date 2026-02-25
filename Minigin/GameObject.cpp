@@ -47,6 +47,18 @@ const glm::vec3& dae::GameObject::GetWorldPosition() const
 	return m_worldPosition;
 }
 
+void dae::GameObject::DeleteMarked()
+{
+	m_components.erase(
+		std::remove_if(m_components.begin(), m_components.end(),
+			[](const std::unique_ptr<Component>& component)
+			{
+				return component->IsMarkedForDelete();
+			}),
+		m_components.end()
+	);
+}
+
 void dae::GameObject::SetWorldPositionDirty()
 {
 	// No need to re-dirty if already dirty
@@ -77,8 +89,7 @@ void dae::GameObject::SetParent(GameObject* newParent, bool keepWorldPosition)
 
 	if (keepWorldPosition)
 	{
-		// Compute world position before the parent changes, then convert to
-		// the new parent's local space so the object doesn't visually jump
+		// Compute world position before the parent changes, then convert to the new parent's local space
 		const glm::vec3 worldPos = GetWorldPosition();
 		const glm::vec3 parentWorld = newParent ? newParent->GetWorldPosition() : glm::vec3{ 0.f };
 		m_transform.SetPosition(worldPos - parentWorld);

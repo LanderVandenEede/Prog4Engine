@@ -30,6 +30,20 @@ void Scene::Update(float deltaTime)
 {
 	for (auto& object : m_objects)
 		object->Update(deltaTime);
+
+	// Delete marked components from all objects first
+	for (auto& object : m_objects)
+		object->DeleteMarked();
+
+	// Then remove any objects marked for deletion
+	m_objects.erase(
+		std::remove_if(m_objects.begin(), m_objects.end(),
+			[](const std::unique_ptr<GameObject>& object)
+			{
+				return object->IsMarkedForDelete();
+			}),
+		m_objects.end()
+	);
 }
 
 void Scene::Render() const

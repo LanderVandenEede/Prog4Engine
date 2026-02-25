@@ -27,6 +27,12 @@ namespace dae
 
 		const Transform& GetTransform() const { return m_transform; }
 
+		void MarkForDelete() { m_markedForDeletion = true; }
+		bool IsMarkedForDelete() const { return m_markedForDeletion; }
+
+		// Removes all components marked for deletion
+		void DeleteMarked();
+
 		template<typename T, typename... Args>
 		T* AddComponent(Args&&... args)
 		{
@@ -83,5 +89,7 @@ namespace dae
 
 		GameObject* m_parent{ nullptr };
 		std::vector<GameObject*> m_children{};
+
+		bool m_markedForDeletion{ false };
 	};
 }

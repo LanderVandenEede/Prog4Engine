@@ -13,6 +13,9 @@ namespace dae
 		void Remove(const GameObject& object);
 		void RemoveAll();
 
+		void MarkForDelete() { m_markedForDeletion = true; }
+		bool IsMarkedForDelete() const { return m_markedForDeletion; }
+
 		void Update(float deltaTime);
 		void Render() const;
 
@@ -27,5 +30,6 @@ namespace dae
 		explicit Scene() = default;
 
 		std::vector<std::unique_ptr<GameObject>> m_objects{};
+		bool m_markedForDeletion{ false };
 	};
 }

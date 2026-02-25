@@ -12,7 +12,7 @@ namespace dae
 		Scene& CreateScene();
 
 		void Update(float deltaTime);
-		void Render();
+		void Render() const;
 	private:
 		friend class Singleton<SceneManager>;
 		SceneManager() = default;

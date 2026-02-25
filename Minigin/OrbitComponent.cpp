@@ -22,8 +22,7 @@ void dae::OrbitComponent::Update(float deltaTime)
 		m_angle -= twoPi;
 
 	// Set local position as an offset from the center point
-	// If the owner has a parent, this is relative to the parent's world position,
-	// so children automatically inherit the movement through GetWorldPosition()
+	// If the owner has a parent, this is relative to the parent's world position, so children automatically inherit the movement through GetWorldPosition()
 	const float x = m_center.x + m_radius * std::cos(m_angle);
 	const float y = m_center.y + m_radius * std::sin(m_angle);
 	m_owner->SetLocalPosition(x, y);
