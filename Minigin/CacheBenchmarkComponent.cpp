@@ -201,7 +201,7 @@ void dae::CacheBenchmarkComponent::Render() const
 		ImGui::TextDisabled("Press Run to benchmark...");
 	}
 
-	// --- Exercise 3: GameObject3DAlt buffer (pointer to transform) ---
+	// --- Exercise 3: GameObject3DAlt buffer ---
 	ImGui::SeparatorText("Exercise 3 - GameObject3DAlt");
 	if (ImGui::Button("Run##go3dalt"))
 		m_go3dAltRunRequested = true;

@@ -49,22 +49,25 @@ static void load()
 	frameObj->AddComponent<dae::FrameCountComponent>();
 	scene.Add(std::move(frameObj));
 
-	//// Parent object orbit
+
+	//// Orbit objects
 	//auto orbitParent = std::make_unique<dae::GameObject>();
+	//orbitParent->SetPosition(300.f, 300.f);
 	//orbitParent->AddComponent<dae::TextureComponent>("GameSprite.png");
-	//orbitParent->AddComponent<dae::OrbitComponent>(glm::vec2{ 300.f, 300.f }, 20.f, 7.f, true);
+	//orbitParent->AddComponent<dae::OrbitComponent>(10.f, 5.f);
+	//dae::GameObject* orbitParentPtr = orbitParent.get();
 	//
-	//// Child object orbiting around the parent
 	//auto orbitChild = std::make_unique<dae::GameObject>();
 	//orbitChild->AddComponent<dae::TextureComponent>("GameSprite.png");
-	//orbitChild->AddComponent<dae::OrbitComponent>(glm::vec2{ 0.f, 0.f }, 40.f, 4.f);
-	//orbitChild->SetParent(orbitParent.get(), false);
+	//orbitChild->AddComponent<dae::OrbitComponent>(40.f, 3.f);
+	//dae::GameObject* orbitChildPtr = orbitChild.get();
+	//orbitChildPtr->SetParent(orbitParentPtr, false);
 	//
-	//
-	//scene.Add(std::move(orbitParent));
 	//scene.Add(std::move(orbitChild));
+	//scene.Add(std::move(orbitParent));
 
-	// Cache benchmark tool — renders as an ImGui window
+
+	// Cache GUI
 	auto benchmarkObj = std::make_unique<dae::GameObject>();
 	benchmarkObj->AddComponent<dae::CacheBenchmarkComponent>();
 	scene.Add(std::move(benchmarkObj));
