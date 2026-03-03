@@ -30,7 +30,7 @@ namespace dae
 		void MarkForDelete() { m_markedForDeletion = true; }
 		bool IsMarkedForDelete() const { return m_markedForDeletion; }
 
-		// Removes all components marked for deletion
+		// Removes all components marked for deletion — called by Scene after Update
 		void DeleteMarked();
 
 		template<typename T, typename... Args>

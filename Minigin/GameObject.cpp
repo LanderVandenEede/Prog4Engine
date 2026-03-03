@@ -1,13 +1,6 @@
 #include "GameObject.h"
 
-dae::GameObject::~GameObject()
-{
-	if (m_parent)
-		SetParent(nullptr);
-
-	for (auto* child : m_children)
-		child->m_parent = nullptr;
-}
+dae::GameObject::~GameObject() = default;
 
 void dae::GameObject::Update(float deltaTime)
 {
@@ -89,7 +82,8 @@ void dae::GameObject::SetParent(GameObject* newParent, bool keepWorldPosition)
 
 	if (keepWorldPosition)
 	{
-		// Compute world position before the parent changes, then convert to the new parent's local space
+		// Compute world position before the parent changes, then convert to
+		// the new parent's local space so the object doesn't visually jump
 		const glm::vec3 worldPos = GetWorldPosition();
 		const glm::vec3 parentWorld = newParent ? newParent->GetWorldPosition() : glm::vec3{ 0.f };
 		m_transform.SetPosition(worldPos - parentWorld);
