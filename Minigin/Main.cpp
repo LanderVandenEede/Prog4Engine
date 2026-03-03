@@ -59,7 +59,7 @@ static void load()
 	//
 	//auto orbitChild = std::make_unique<dae::GameObject>();
 	//orbitChild->AddComponent<dae::TextureComponent>("GameSprite.png");
-	//orbitChild->AddComponent<dae::OrbitComponent>(40.f, 3.f);
+	//orbitChild->AddComponent<dae::OrbitComponent>(40.f, -3.f);
 	//dae::GameObject* orbitChildPtr = orbitChild.get();
 	//orbitChildPtr->SetParent(orbitParentPtr, false);
 	//
