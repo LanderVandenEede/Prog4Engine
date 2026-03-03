@@ -14,6 +14,7 @@
 #include "FrameCountComponent.h"
 #include "OrbitComponent.h"
 #include "TextureComponent.h"
+#include "CacheBenchmarkComponent.h"
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -48,20 +49,25 @@ static void load()
 	frameObj->AddComponent<dae::FrameCountComponent>();
 	scene.Add(std::move(frameObj));
 
-	// Parent object orbit
-	auto orbitParent = std::make_unique<dae::GameObject>();
-	orbitParent->AddComponent<dae::TextureComponent>("GameSprite.png");
-	orbitParent->AddComponent<dae::OrbitComponent>(glm::vec2{ 300.f, 300.f }, 20.f, 7.f, true);
+	//// Parent object orbit
+	//auto orbitParent = std::make_unique<dae::GameObject>();
+	//orbitParent->AddComponent<dae::TextureComponent>("GameSprite.png");
+	//orbitParent->AddComponent<dae::OrbitComponent>(glm::vec2{ 300.f, 300.f }, 20.f, 7.f, true);
+	//
+	//// Child object orbiting around the parent
+	//auto orbitChild = std::make_unique<dae::GameObject>();
+	//orbitChild->AddComponent<dae::TextureComponent>("GameSprite.png");
+	//orbitChild->AddComponent<dae::OrbitComponent>(glm::vec2{ 0.f, 0.f }, 40.f, 4.f);
+	//orbitChild->SetParent(orbitParent.get(), false);
+	//
+	//
+	//scene.Add(std::move(orbitParent));
+	//scene.Add(std::move(orbitChild));
 
-	// Child object orbiting around the parent
-	auto orbitChild = std::make_unique<dae::GameObject>();
-	orbitChild->AddComponent<dae::TextureComponent>("GameSprite.png");
-	orbitChild->AddComponent<dae::OrbitComponent>(glm::vec2{ 0.f, 0.f }, 40.f, 4.f);
-	orbitChild->SetParent(orbitParent.get(), false);
-
-
-	scene.Add(std::move(orbitParent));
-	scene.Add(std::move(orbitChild));
+	// Cache benchmark tool — renders as an ImGui window
+	auto benchmarkObj = std::make_unique<dae::GameObject>();
+	benchmarkObj->AddComponent<dae::CacheBenchmarkComponent>();
+	scene.Add(std::move(benchmarkObj));
 
 
 }
