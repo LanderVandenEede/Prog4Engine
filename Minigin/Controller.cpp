@@ -147,7 +147,7 @@ private:
 	void TryOpenGamepad()
 	{
 		int count = 0;
-		SDL_GamepadID* gamepads = SDL_GetGamepads(&count);
+		SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
 		if (gamepads && m_playerIndex < static_cast<unsigned int>(count))
 			m_gamepad = SDL_OpenGamepad(gamepads[m_playerIndex]);
 		SDL_free(gamepads);
