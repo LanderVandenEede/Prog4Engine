@@ -163,7 +163,7 @@ target_link_libraries("${TARGET_NAME}" PUBLIC
   ${VLD_LIBRARIES}
 )
 
-if(WIN32)
+if(WIN32 AND NOT EMSCRIPTEN)
   target_link_libraries("${TARGET_NAME}" PUBLIC xinput)
 endif()
 

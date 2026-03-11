@@ -1,12 +1,13 @@
 #include "Controller.h"
 
-#ifdef _WIN32
+#ifndef __EMSCRIPTEN__
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <Xinput.h>
 
-static unsigned int ToXInputButton(dae::Controller::Button button)
+static unsigned int ButtonToXInput(dae::Controller::Button btn)
 {
-	switch (button)
+	switch (btn)
 	{
 	case dae::Controller::Button::DPadUp:        return XINPUT_GAMEPAD_DPAD_UP;
 	case dae::Controller::Button::DPadDown:      return XINPUT_GAMEPAD_DPAD_DOWN;
@@ -29,142 +30,141 @@ static unsigned int ToXInputButton(dae::Controller::Button button)
 class dae::Controller::Impl
 {
 public:
-	explicit Impl(unsigned int playerIndex)
-		: m_playerIndex(playerIndex)
+	explicit Impl(unsigned int index)
+		: m_index(index)
 	{
+		ZeroMemory(&m_lastState, sizeof(XINPUT_STATE));
+		ZeroMemory(&m_state, sizeof(XINPUT_STATE));
 	}
 
 	void Update()
 	{
-		m_previousState = m_currentState;
-		ZeroMemory(&m_currentState, sizeof(XINPUT_STATE));
-		XInputGetState(m_playerIndex, &m_currentState);
+		CopyMemory(&m_lastState, &m_state, sizeof(XINPUT_STATE));
+		ZeroMemory(&m_state, sizeof(XINPUT_STATE));
+		XInputGetState(m_index, &m_state);
 
-		const auto buttonChanges = m_currentState.Gamepad.wButtons ^ m_previousState.Gamepad.wButtons;
-		m_buttonsPressedThisFrame = buttonChanges & m_currentState.Gamepad.wButtons;
-		m_buttonsReleasedThisFrame = buttonChanges & ~m_currentState.Gamepad.wButtons;
+		const WORD changed = m_state.Gamepad.wButtons ^ m_lastState.Gamepad.wButtons;
+		m_pressed = changed & m_state.Gamepad.wButtons;
+		m_released = changed & ~m_state.Gamepad.wButtons;
 	}
 
-	bool IsDown(Button button) const
+	bool IsDown(Button btn) const
 	{
-		return m_currentState.Gamepad.wButtons & ToXInputButton(button);
+		return (m_state.Gamepad.wButtons & ButtonToXInput(btn)) != 0;
 	}
 
-	bool IsUp(Button button) const
+	bool IsUp(Button btn) const
 	{
-		return m_buttonsReleasedThisFrame & ToXInputButton(button);
+		return (m_released & ButtonToXInput(btn)) != 0;
 	}
 
-	bool IsPressed(Button button) const
+	bool IsPressed(Button btn) const
 	{
-		return m_buttonsPressedThisFrame & ToXInputButton(button);
+		return (m_pressed & ButtonToXInput(btn)) != 0;
 	}
 
 private:
-	unsigned int m_playerIndex;
-	XINPUT_STATE m_currentState{};
-	XINPUT_STATE m_previousState{};
-	unsigned int m_buttonsPressedThisFrame{};
-	unsigned int m_buttonsReleasedThisFrame{};
+	unsigned int m_index;
+	XINPUT_STATE m_state{};
+	XINPUT_STATE m_lastState{};
+	WORD         m_pressed{};
+	WORD         m_released{};
 };
 
 #else
 
 #include <SDL3/SDL.h>
 
-// SDL gamepad implementation for Emscripten
 class dae::Controller::Impl
 {
 public:
-	explicit Impl(unsigned int playerIndex)
-		: m_playerIndex(playerIndex)
+	explicit Impl(unsigned int index)
+		: m_index(index)
 	{
-		TryOpenGamepad();
+		TryConnect();
 	}
 
 	~Impl()
 	{
-		if (m_gamepad)
-			SDL_CloseGamepad(m_gamepad);
+		if (m_handle)
+			SDL_CloseGamepad(m_handle);
 	}
 
 	void Update()
 	{
-		SDL_UpdateGamepads();
+		
+		if (!m_handle)
+			TryConnect();
 
-		// Gamepad may connect after startup
-		if (!m_gamepad)
-			TryOpenGamepad();
+		m_last = m_current;
+		m_current = 0;
 
-		m_previousButtons = m_currentButtons;
-		m_currentButtons = 0;
+		if (!m_handle)
+			return;
 
-		if (m_gamepad)
-		{
-			auto setIf = [&](Controller::Button btn, SDL_GamepadButton sdlBtn)
-				{
-					if (SDL_GetGamepadButton(m_gamepad, sdlBtn))
-						m_currentButtons |= static_cast<unsigned int>(btn);
-				};
+		auto poll = [&](Controller::Button btn, SDL_GamepadButton sdlBtn)
+			{
+				if (SDL_GetGamepadButton(m_handle, sdlBtn))
+					m_current |= static_cast<unsigned int>(btn);
+			};
 
-			setIf(Controller::Button::DPadUp, SDL_GAMEPAD_BUTTON_DPAD_UP);
-			setIf(Controller::Button::DPadDown, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
-			setIf(Controller::Button::DPadLeft, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
-			setIf(Controller::Button::DPadRight, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
-			setIf(Controller::Button::Start, SDL_GAMEPAD_BUTTON_START);
-			setIf(Controller::Button::Back, SDL_GAMEPAD_BUTTON_BACK);
-			setIf(Controller::Button::LeftThumb, SDL_GAMEPAD_BUTTON_LEFT_STICK);
-			setIf(Controller::Button::RightThumb, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
-			setIf(Controller::Button::LeftShoulder, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
-			setIf(Controller::Button::RightShoulder, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
-			setIf(Controller::Button::ButtonA, SDL_GAMEPAD_BUTTON_SOUTH);
-			setIf(Controller::Button::ButtonB, SDL_GAMEPAD_BUTTON_EAST);
-			setIf(Controller::Button::ButtonX, SDL_GAMEPAD_BUTTON_WEST);
-			setIf(Controller::Button::ButtonY, SDL_GAMEPAD_BUTTON_NORTH);
-		}
+		poll(Controller::Button::DPadUp, SDL_GAMEPAD_BUTTON_DPAD_UP);
+		poll(Controller::Button::DPadDown, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
+		poll(Controller::Button::DPadLeft, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
+		poll(Controller::Button::DPadRight, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
+		poll(Controller::Button::Start, SDL_GAMEPAD_BUTTON_START);
+		poll(Controller::Button::Back, SDL_GAMEPAD_BUTTON_BACK);
+		poll(Controller::Button::LeftThumb, SDL_GAMEPAD_BUTTON_LEFT_STICK);
+		poll(Controller::Button::RightThumb, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
+		poll(Controller::Button::LeftShoulder, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
+		poll(Controller::Button::RightShoulder, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
+		poll(Controller::Button::ButtonA, SDL_GAMEPAD_BUTTON_SOUTH);
+		poll(Controller::Button::ButtonB, SDL_GAMEPAD_BUTTON_EAST);
+		poll(Controller::Button::ButtonX, SDL_GAMEPAD_BUTTON_WEST);
+		poll(Controller::Button::ButtonY, SDL_GAMEPAD_BUTTON_NORTH);
 
-		const unsigned int buttonChanges = m_currentButtons ^ m_previousButtons;
-		m_buttonsPressedThisFrame = buttonChanges & m_currentButtons;
-		m_buttonsReleasedThisFrame = buttonChanges & ~m_currentButtons;
+		const unsigned int changed = m_current ^ m_last;
+		m_pressed = changed & m_current;
+		m_released = changed & ~m_current;
 	}
 
-	bool IsDown(Button button) const
+	bool IsDown(Button btn) const
 	{
-		return m_currentButtons & static_cast<unsigned int>(button);
+		return (m_current & static_cast<unsigned int>(btn)) != 0;
 	}
 
-	bool IsUp(Button button) const
+	bool IsUp(Button btn) const
 	{
-		return m_buttonsReleasedThisFrame & static_cast<unsigned int>(button);
+		return (m_released & static_cast<unsigned int>(btn)) != 0;
 	}
 
-	bool IsPressed(Button button) const
+	bool IsPressed(Button btn) const
 	{
-		return m_buttonsPressedThisFrame & static_cast<unsigned int>(button);
+		return (m_pressed & static_cast<unsigned int>(btn)) != 0;
 	}
 
 private:
-	void TryOpenGamepad()
+	void TryConnect()
 	{
 		int count = 0;
-		SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
-		if (gamepads && m_playerIndex < static_cast<unsigned int>(count))
-			m_gamepad = SDL_OpenGamepad(gamepads[m_playerIndex]);
-		SDL_free(gamepads);
+		SDL_JoystickID* available = SDL_GetGamepads(&count);
+		if (available && m_index < static_cast<unsigned int>(count))
+			m_handle = SDL_OpenGamepad(available[m_index]);
+		SDL_free(available);
 	}
 
-	unsigned int  m_playerIndex;
-	SDL_Gamepad* m_gamepad{ nullptr };
-	unsigned int  m_currentButtons{};
-	unsigned int  m_previousButtons{};
-	unsigned int  m_buttonsPressedThisFrame{};
-	unsigned int  m_buttonsReleasedThisFrame{};
+	unsigned int m_index;
+	SDL_Gamepad* m_handle{ nullptr };
+	unsigned int m_current{};
+	unsigned int m_last{};
+	unsigned int m_pressed{};
+	unsigned int m_released{};
 };
 
 #endif
 
-dae::Controller::Controller(unsigned int playerIndex)
-	: m_pImpl(std::make_unique<Impl>(playerIndex))
+dae::Controller::Controller(unsigned int index)
+	: m_pImpl(std::make_unique<Impl>(index))
 {
 }
 
