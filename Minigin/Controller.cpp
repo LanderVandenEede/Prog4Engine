@@ -97,10 +97,10 @@ public:
 	{
 		if (e.type == SDL_EVENT_GAMEPAD_ADDED)
 		{
-
+		
 			if (!m_gamepad)
 			{
-
+			
 				int count = 0;
 				SDL_JoystickID* ids = SDL_GetGamepads(&count);
 				if (ids && m_playerIndex < static_cast<unsigned int>(count))
@@ -121,7 +121,7 @@ public:
 			return;
 		}
 
-
+	
 		if (!m_gamepad || e.gbutton.which != SDL_GetGamepadID(m_gamepad))
 			return;
 
@@ -195,7 +195,6 @@ dae::Controller::Controller(unsigned int playerIndex)
 	: m_pImpl(std::make_unique<Impl>(playerIndex))
 {
 }
-
 
 dae::Controller::~Controller() = default;
 
