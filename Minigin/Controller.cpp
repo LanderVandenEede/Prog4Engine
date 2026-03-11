@@ -70,6 +70,8 @@ private:
 
 #else
 
+#include <SDL3/SDL.h>
+
 // SDL gamepad implementation for Emscripten
 class dae::Controller::Impl
 {
@@ -90,7 +92,7 @@ public:
 	{
 		SDL_UpdateGamepads();
 
-		// Gamepad may connect after startup — retry if not open yet.
+		// Gamepad may connect after startup
 		if (!m_gamepad)
 			TryOpenGamepad();
 
@@ -165,6 +167,7 @@ dae::Controller::Controller(unsigned int playerIndex)
 	: m_pImpl(std::make_unique<Impl>(playerIndex))
 {
 }
+
 
 dae::Controller::~Controller() = default;
 
