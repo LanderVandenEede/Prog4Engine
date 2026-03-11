@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <Xinput.h>
 
+
 static unsigned int ToXInputButton(dae::Controller::Button button)
 {
 	switch (button)
@@ -60,6 +61,8 @@ public:
 		return m_buttonsPressedThisFrame & ToXInputButton(button);
 	}
 
+	void ProcessEvent(const SDL_Event&) {} 
+
 private:
 	unsigned int m_playerIndex;
 	XINPUT_STATE m_currentState{};
@@ -72,60 +75,72 @@ private:
 
 #include <SDL3/SDL.h>
 
-// SDL gamepad implementation for Emscripten
+
 class dae::Controller::Impl
 {
 public:
 	explicit Impl(unsigned int playerIndex)
 		: m_playerIndex(playerIndex)
 	{
-		TryOpenGamepad();
 	}
 
-	~Impl()
-	{
-		if (m_gamepad)
-			SDL_CloseGamepad(m_gamepad);
-	}
 
 	void Update()
 	{
-		SDL_UpdateGamepads();
-
-		// Gamepad may connect after startup
-		if (!m_gamepad)
-			TryOpenGamepad();
-
 		m_previousButtons = m_currentButtons;
-		m_currentButtons = 0;
+		m_buttonsPressedThisFrame = 0;
+		m_buttonsReleasedThisFrame = 0;
+	}
 
-		if (m_gamepad)
+
+	void ProcessEvent(const SDL_Event& e)
+	{
+		if (e.type == SDL_EVENT_GAMEPAD_ADDED)
 		{
-			auto setIf = [&](Controller::Button btn, SDL_GamepadButton sdlBtn)
-				{
-					if (SDL_GetGamepadButton(m_gamepad, sdlBtn))
-						m_currentButtons |= static_cast<unsigned int>(btn);
-				};
-
-			setIf(Controller::Button::DPadUp, SDL_GAMEPAD_BUTTON_DPAD_UP);
-			setIf(Controller::Button::DPadDown, SDL_GAMEPAD_BUTTON_DPAD_DOWN);
-			setIf(Controller::Button::DPadLeft, SDL_GAMEPAD_BUTTON_DPAD_LEFT);
-			setIf(Controller::Button::DPadRight, SDL_GAMEPAD_BUTTON_DPAD_RIGHT);
-			setIf(Controller::Button::Start, SDL_GAMEPAD_BUTTON_START);
-			setIf(Controller::Button::Back, SDL_GAMEPAD_BUTTON_BACK);
-			setIf(Controller::Button::LeftThumb, SDL_GAMEPAD_BUTTON_LEFT_STICK);
-			setIf(Controller::Button::RightThumb, SDL_GAMEPAD_BUTTON_RIGHT_STICK);
-			setIf(Controller::Button::LeftShoulder, SDL_GAMEPAD_BUTTON_LEFT_SHOULDER);
-			setIf(Controller::Button::RightShoulder, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER);
-			setIf(Controller::Button::ButtonA, SDL_GAMEPAD_BUTTON_SOUTH);
-			setIf(Controller::Button::ButtonB, SDL_GAMEPAD_BUTTON_EAST);
-			setIf(Controller::Button::ButtonX, SDL_GAMEPAD_BUTTON_WEST);
-			setIf(Controller::Button::ButtonY, SDL_GAMEPAD_BUTTON_NORTH);
+		
+			if (!m_gamepad)
+			{
+			
+				int count = 0;
+				SDL_JoystickID* ids = SDL_GetGamepads(&count);
+				if (ids && m_playerIndex < static_cast<unsigned int>(count))
+					m_gamepad = SDL_OpenGamepad(ids[m_playerIndex]);
+				SDL_free(ids);
+			}
+			return;
 		}
 
-		const unsigned int buttonChanges = m_currentButtons ^ m_previousButtons;
-		m_buttonsPressedThisFrame = buttonChanges & m_currentButtons;
-		m_buttonsReleasedThisFrame = buttonChanges & ~m_currentButtons;
+		if (e.type == SDL_EVENT_GAMEPAD_REMOVED)
+		{
+			if (m_gamepad && SDL_GetGamepadID(m_gamepad) == e.gdevice.which)
+			{
+				SDL_CloseGamepad(m_gamepad);
+				m_gamepad = nullptr;
+				m_currentButtons = 0;
+			}
+			return;
+		}
+
+	
+		if (!m_gamepad || e.gbutton.which != SDL_GetGamepadID(m_gamepad))
+			return;
+
+		if (e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN || e.type == SDL_EVENT_GAMEPAD_BUTTON_UP)
+		{
+			const unsigned int mask = SDLButtonToMask(static_cast<SDL_GamepadButton>(e.gbutton.button));
+			if (mask == 0) return;
+
+			if (e.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
+			{
+				m_currentButtons |= mask;
+				m_buttonsPressedThisFrame |= mask;
+			}
+			else
+			{
+				m_currentButtons &= ~mask;
+				m_buttonsReleasedThisFrame |= mask;
+			}
+		}
 	}
 
 	bool IsDown(Button button) const
@@ -144,13 +159,26 @@ public:
 	}
 
 private:
-	void TryOpenGamepad()
+	static unsigned int SDLButtonToMask(SDL_GamepadButton sdlBtn)
 	{
-		int count = 0;
-		SDL_JoystickID* gamepads = SDL_GetGamepads(&count);
-		if (gamepads && m_playerIndex < static_cast<unsigned int>(count))
-			m_gamepad = SDL_OpenGamepad(gamepads[m_playerIndex]);
-		SDL_free(gamepads);
+		switch (sdlBtn)
+		{
+		case SDL_GAMEPAD_BUTTON_DPAD_UP:       return static_cast<unsigned int>(Controller::Button::DPadUp);
+		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:     return static_cast<unsigned int>(Controller::Button::DPadDown);
+		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:     return static_cast<unsigned int>(Controller::Button::DPadLeft);
+		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:    return static_cast<unsigned int>(Controller::Button::DPadRight);
+		case SDL_GAMEPAD_BUTTON_START:         return static_cast<unsigned int>(Controller::Button::Start);
+		case SDL_GAMEPAD_BUTTON_BACK:          return static_cast<unsigned int>(Controller::Button::Back);
+		case SDL_GAMEPAD_BUTTON_LEFT_STICK:    return static_cast<unsigned int>(Controller::Button::LeftThumb);
+		case SDL_GAMEPAD_BUTTON_RIGHT_STICK:   return static_cast<unsigned int>(Controller::Button::RightThumb);
+		case SDL_GAMEPAD_BUTTON_LEFT_SHOULDER: return static_cast<unsigned int>(Controller::Button::LeftShoulder);
+		case SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:return static_cast<unsigned int>(Controller::Button::RightShoulder);
+		case SDL_GAMEPAD_BUTTON_SOUTH:         return static_cast<unsigned int>(Controller::Button::ButtonA);
+		case SDL_GAMEPAD_BUTTON_EAST:          return static_cast<unsigned int>(Controller::Button::ButtonB);
+		case SDL_GAMEPAD_BUTTON_WEST:          return static_cast<unsigned int>(Controller::Button::ButtonX);
+		case SDL_GAMEPAD_BUTTON_NORTH:         return static_cast<unsigned int>(Controller::Button::ButtonY);
+		default:                               return 0;
+		}
 	}
 
 	unsigned int  m_playerIndex;
@@ -168,10 +196,10 @@ dae::Controller::Controller(unsigned int playerIndex)
 {
 }
 
-
 dae::Controller::~Controller() = default;
 
 void dae::Controller::Update() { m_pImpl->Update(); }
+void dae::Controller::ProcessEvent(const SDL_Event& e) { m_pImpl->ProcessEvent(e); }
 bool dae::Controller::IsDown(Button b) const { return m_pImpl->IsDown(b); }
 bool dae::Controller::IsUp(Button b) const { return m_pImpl->IsUp(b); }
 bool dae::Controller::IsPressed(Button b) const { return m_pImpl->IsPressed(b); }

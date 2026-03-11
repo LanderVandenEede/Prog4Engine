@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 
+union SDL_Event;
+
 namespace dae
 {
 	class Controller final
@@ -28,6 +30,7 @@ namespace dae
 		~Controller();
 
 		void Update();
+		void ProcessEvent(const SDL_Event& e);
 
 		bool IsDown(Button button) const;
 		bool IsUp(Button button) const;
