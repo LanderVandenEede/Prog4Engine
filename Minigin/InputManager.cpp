@@ -4,18 +4,14 @@
 
 dae::InputManager::InputManager()
 {
+	
 	int numKeys{};
-	SDL_GetKeyboardState(&numKeys);
+	SDL_GetKeyboardState(&numKeys); 
 	m_previousKeyboardState.resize(numKeys, 0);
 }
 
 bool dae::InputManager::ProcessInput(float deltaTime)
 {
-	//Controller
-	m_controller.Update();
-	ProcessControllerCommands(deltaTime);
-
-	//Keyboard events
 	SDL_Event e;
 	while (SDL_PollEvent(&e))
 	{
@@ -25,12 +21,16 @@ bool dae::InputManager::ProcessInput(float deltaTime)
 		ImGui_ImplSDL3_ProcessEvent(&e);
 	}
 
-	//Keyboard state
+	//Controller
+	m_controller.Update();
+	ProcessControllerCommands(deltaTime);
+
+	//Keyboard state snapshot
 	int numKeys{};
 	const bool* currentKeyboardState = SDL_GetKeyboardState(&numKeys);
 	ProcessKeyboardCommands(currentKeyboardState, deltaTime);
 
-	//Save state for next frame
+	// Save state for next frame
 	m_previousKeyboardState.assign(currentKeyboardState, currentKeyboardState + numKeys);
 
 	return true;
