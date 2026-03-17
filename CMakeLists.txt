@@ -15,26 +15,34 @@ endif()
 
 # list source files here
 add_executable(${TARGET_NAME} ${TARGET_PARAM}
+  Minigin/AddScoreCommand.cpp
   Minigin/CacheBenchmarkComponent.cpp
-  Minigin/Controller.cpp
-  Minigin/MoveCommand.cpp
   Minigin/Component.cpp
+  Minigin/Controller.cpp
+  Minigin/DamageCommand.cpp
+  Minigin/EventQueue.cpp
   Minigin/Font.cpp
-  Minigin/OrbitComponent.cpp
-  Minigin/TextureComponent.cpp
   Minigin/FrameCountComponent.cpp
   Minigin/GameObject.cpp
+  Minigin/HealthComponent.cpp
   Minigin/InputManager.cpp
+  Minigin/HealthDisplayComponent.cpp
   Minigin/Main.cpp
   Minigin/Minigin.cpp
+  Minigin/MoveCommand.cpp
+  Minigin/OrbitComponent.cpp
   Minigin/Renderer.cpp
   Minigin/ResourceManager.cpp
   Minigin/Scene.cpp
   Minigin/SceneManager.cpp
+  Minigin/ScoreComponent.cpp
+  Minigin/ScoreDisplayComponent.cpp
+  Minigin/Subject.cpp
   Minigin/TextComponent.cpp
   Minigin/Texture2D.cpp
+  Minigin/TextureComponent.cpp
   Minigin/Transform.cpp
-)
+ Minigin/SteamAchievementObserver.cpp)
 
 # enable c++20 features
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_20)
@@ -129,7 +137,7 @@ add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/imgui_demo.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_sdlrenderer3.cpp
-)
+ "Minigin/SteamAchievementObserver.h" "Minigin/SteamAchievementObserver.cpp")
 
 target_include_directories(imgui PUBLIC
   ${imgui_SOURCE_DIR}

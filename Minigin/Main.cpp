@@ -14,9 +14,14 @@
 #include "TextureComponent.h"
 #include "TextComponent.h"
 #include "FrameCountComponent.h"
-#include "OrbitComponent.h"
-#include "CacheBenchmarkComponent.h"
 #include "MoveCommand.h"
+#include "DamageCommand.h"
+#include "AddScoreCommand.h"
+#include "HealthComponent.h"
+#include "ScoreComponent.h"
+#include "HealthDisplayComponent.h"
+#include "ScoreDisplayComponent.h"
+#include "SteamAchievementObserver.h"
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -79,34 +84,57 @@ static void load()
 	auto fontSmall = dae::ResourceManager::GetInstance().LoadFont("Lingua.otf", 20);
 	auto CtrlInputObj = std::make_unique<dae::GameObject>();
 	CtrlInputObj->SetPosition(10, 80);
-	CtrlInputObj->AddComponent<dae::TextComponent>("Use the D-Pad to move pink pengo", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	CtrlInputObj->AddComponent<dae::TextComponent>("Use the D-Pad to move pink pengo, A to add score, X to inflict damage", fontSmall, SDL_Color{ 255, 255, 255, 255 });
 	scene.Add(std::move(CtrlInputObj));
 
 	//KeyboardHelp
 	auto KBInputObj = std::make_unique<dae::GameObject>();
 	KBInputObj->SetPosition(10, 110);
-	KBInputObj->AddComponent<dae::TextComponent>("Use WASD to move blue pengo", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	KBInputObj->AddComponent<dae::TextComponent>("Use WASD to move blue pengo, Z to add score, C to inflict damage", fontSmall, SDL_Color{ 255, 255, 255, 255 });
 	scene.Add(std::move(KBInputObj));
+
+	auto& input = dae::InputManager::GetInstance();
 
 	//Character 1: WASD
 	constexpr float speed1 = 100.f;
 	auto character1 = std::make_unique<dae::GameObject>();
 	character1->SetPosition(300, 300);
 	character1->AddComponent<dae::TextureComponent>("GameSprite.png");
+	auto* health1 = character1->AddComponent<dae::HealthComponent>(3);
+	auto* score1 = character1->AddComponent<dae::ScoreComponent>();
 	dae::GameObject* char1Ptr = character1.get();
 	scene.Add(std::move(character1));
 
-	auto& input = dae::InputManager::GetInstance();
 	input.BindKeyboardCommand(SDL_SCANCODE_W, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char1Ptr, glm::vec3{ 0, -1, 0 }, speed1));
 	input.BindKeyboardCommand(SDL_SCANCODE_S, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char1Ptr, glm::vec3{ 0,  1, 0 }, speed1));
 	input.BindKeyboardCommand(SDL_SCANCODE_A, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char1Ptr, glm::vec3{ -1,  0, 0 }, speed1));
 	input.BindKeyboardCommand(SDL_SCANCODE_D, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char1Ptr, glm::vec3{ 1,  0, 0 }, speed1));
+	input.BindKeyboardCommand(SDL_SCANCODE_C, dae::KeyState::Pressed, std::make_unique<dae::DamageCommand>(health1));
+	input.BindKeyboardCommand(SDL_SCANCODE_Z, dae::KeyState::Pressed, std::make_unique<dae::AddScoreCommand>(score1, 100));
+
+	auto lives1Obj = std::make_unique<dae::GameObject>();
+	lives1Obj->SetPosition(10, 140);
+	lives1Obj->AddComponent<dae::TextComponent>("# lives: 3", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	lives1Obj->AddComponent<dae::HealthDisplayComponent>(health1);
+	scene.Add(std::move(lives1Obj));
+
+	auto score1Obj = std::make_unique<dae::GameObject>();
+	score1Obj->SetPosition(10, 165);
+	score1Obj->AddComponent<dae::TextComponent>("Score: 0", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	score1Obj->AddComponent<dae::ScoreDisplayComponent>(score1);
+	scene.Add(std::move(score1Obj));
+
+	auto achievement1Obj = std::make_unique<dae::GameObject>();
+	achievement1Obj->AddComponent<dae::SteamAchievementObserver>(score1);
+	scene.Add(std::move(achievement1Obj));
 
 	//Character 2: DPad
 	constexpr float speed2 = speed1 * 2.f;
 	auto character2 = std::make_unique<dae::GameObject>();
 	character2->SetPosition(500, 300);
 	character2->AddComponent<dae::TextureComponent>("GameSprite_01.png");
+	auto* health2 = character2->AddComponent<dae::HealthComponent>(3);
+	auto* score2 = character2->AddComponent<dae::ScoreComponent>();
 	dae::GameObject* char2Ptr = character2.get();
 	scene.Add(std::move(character2));
 
@@ -114,6 +142,24 @@ static void load()
 	input.BindControllerCommand(dae::Controller::Button::DPadDown, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char2Ptr, glm::vec3{ 0,  1, 0 }, speed2));
 	input.BindControllerCommand(dae::Controller::Button::DPadLeft, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char2Ptr, glm::vec3{ -1,  0, 0 }, speed2));
 	input.BindControllerCommand(dae::Controller::Button::DPadRight, dae::KeyState::Down, std::make_unique<dae::MoveCommand>(char2Ptr, glm::vec3{ 1,  0, 0 }, speed2));
+	input.BindControllerCommand(dae::Controller::Button::ButtonX, dae::KeyState::Pressed, std::make_unique<dae::DamageCommand>(health2));
+	input.BindControllerCommand(dae::Controller::Button::ButtonA, dae::KeyState::Pressed, std::make_unique<dae::AddScoreCommand>(score2, 100));
+
+	auto lives2Obj = std::make_unique<dae::GameObject>();
+	lives2Obj->SetPosition(10, 195);
+	lives2Obj->AddComponent<dae::TextComponent>("# lives: 3", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	lives2Obj->AddComponent<dae::HealthDisplayComponent>(health2);
+	scene.Add(std::move(lives2Obj));
+
+	auto score2Obj = std::make_unique<dae::GameObject>();
+	score2Obj->SetPosition(10, 220);
+	score2Obj->AddComponent<dae::TextComponent>("Score: 0", fontSmall, SDL_Color{ 255, 255, 255, 255 });
+	score2Obj->AddComponent<dae::ScoreDisplayComponent>(score2);
+	scene.Add(std::move(score2Obj));
+
+	auto achievement2Obj = std::make_unique<dae::GameObject>();
+	achievement2Obj->AddComponent<dae::SteamAchievementObserver>(score2);
+	scene.Add(std::move(achievement2Obj));
 }
 
 int main(int, char* []) {

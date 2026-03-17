@@ -14,6 +14,7 @@ namespace dae
 
 		void MarkForDelete() { m_markedForDeletion = true; }
 		bool IsMarkedForDelete() const { return m_markedForDeletion; }
+		GameObject* GetOwner() const { return m_owner; }
 
 		Component(const Component& other) = delete;
 		Component(Component&& other) = delete;
